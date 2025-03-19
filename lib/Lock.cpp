@@ -23,7 +23,7 @@ void Lock::lock()
         switchThreads();
         // When we return here, this thread has been woken,
         // so now we can safely set 'held = true'.
-        held = true;
+        // held = true;
     }
     else {
         held = true;
@@ -37,7 +37,15 @@ void Lock::unlock()
 {
     // TODO
     disableInterrupts();
+    _unlock(); // Confirm this once
+    enableInterrupts();
+}
 
+// Unlock the lock while interrupts have already been disabled
+// NOTE: This function should NOT be used by user code. It is only to be used
+//       by uthread library code
+void Lock::_unlock()
+{   
     if(!signaled_queue.empty()) {
         TCB* next = signaled_queue.front();
         signaled_queue.pop();
@@ -47,22 +55,14 @@ void Lock::unlock()
     else if(!entrance_queue.empty()) {
         TCB* next = entrance_queue.front();
         entrance_queue.pop();
+        next->setState(READY);
         addToReady(next);
     }
     else{
         //No one is waiting, so free the lock
-        _unlock();
+        held = false;
     }
-    enableInterrupts();
-}
-
-// Unlock the lock while interrupts have already been disabled
-// NOTE: This function should NOT be used by user code. It is only to be used
-//       by uthread library code
-void Lock::_unlock()
-{
-    // TODO
-    held = false;
+    
 }
 
 // Let the lock know that it should switch to this thread after the lock has

@@ -4,7 +4,7 @@
 
 using namespace std;
 
-#define NUM_THREADS 4
+#define NUM_THREADS 5
 #define ITERATIONS 10000
 
 static int sharedCounter = 0;
@@ -34,6 +34,7 @@ int main() {
     for (int i = 0; i < NUM_THREADS; i++) {
         uthread_join(tids[i], nullptr);
     }
+    // spinlockTestFunc(0);
     cout << "Final sharedCounter = " << sharedCounter 
          << " (expected " << NUM_THREADS * ITERATIONS << ")" << endl;
     return 0;

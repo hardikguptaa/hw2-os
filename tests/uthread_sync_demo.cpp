@@ -9,7 +9,7 @@ using namespace std;
 
 #define UTHREAD_TIME_QUANTUM 10000
 #define SHARED_BUFFER_SIZE 10
-#define PRINT_FREQUENCY 100000
+#define PRINT_FREQUENCY 1
 #define RANDOM_YIELD_PERCENT 50
 
 // Shared buffer
@@ -61,19 +61,18 @@ void *producer(void *arg)
     {
         buffer_lock.lock();
 
-        // Wait for room in the buffer if needed
-        // NOTE: Assuming Mesa semantics
+        // Wait for room in the buffer if needed (Mesa semantics)
         while (item_count == SHARED_BUFFER_SIZE)
         {
             need_space_cv.wait(buffer_lock);
         }
 
-        // Make sure synchronization is working correctly
+        // Ensure synchronization is working correctly
         assert(!producer_in_critical_section);
         producer_in_critical_section = true;
         assert_buffer_invariants();
 
-        // Place an item in the buffer
+        // Place an item in the buffer (using the current thread's ID)
         buffer[head] = uthread_self();
         head = (head + 1) % SHARED_BUFFER_SIZE;
         item_count++;
@@ -85,7 +84,7 @@ void *producer(void *arg)
         producer_in_critical_section = false;
         buffer_lock.unlock();
 
-        // Randomly give another thread a chance
+        // Randomly yield to allow other threads to run
         if ((rand() % 100) < RANDOM_YIELD_PERCENT)
         {
             uthread_yield();
@@ -101,19 +100,18 @@ void *consumer(void *arg)
     {
         buffer_lock.lock();
 
-        // Wait for an item in the buffer if needed
-        // NOTE: Assuming Mesa semantics
+        // Wait for an item in the buffer if needed (Mesa semantics)
         while (item_count == 0)
         {
             need_item_cv.wait(buffer_lock);
         }
 
-        // Make sure synchronization is working correctly
+        // Ensure synchronization is working correctly
         assert(!consumer_in_critical_section);
         consumer_in_critical_section = true;
         assert_buffer_invariants();
 
-        // Grab an item from the buffer
+        // Remove an item from the buffer
         int item = buffer[tail];
         tail = (tail + 1) % SHARED_BUFFER_SIZE;
         item_count--;
@@ -125,13 +123,13 @@ void *consumer(void *arg)
             cout << "Consumed " << consumed_count << " items" << endl;
         }
 
-        // Signal that there is now room in the buffer
+        // Signal that there is room in the buffer
         need_space_cv.signal();
 
         consumer_in_critical_section = false;
         buffer_lock.unlock();
 
-        // Randomly give another thread a chance
+        // Randomly yield to allow other threads to run
         if ((rand() % 100) < RANDOM_YIELD_PERCENT)
         {
             uthread_yield();
@@ -159,7 +157,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // Init user thread library
+    // Initialize uthread library
     int ret = uthread_init(UTHREAD_TIME_QUANTUM);
     if (ret != 0)
     {
@@ -189,10 +187,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    // NOTE: Producers and consumers run until killed but if we wanted to
-    //       join on them do the following
-
-    // Wait for all producers to complete
+    // In this test, threads run indefinitely until interrupted.
+    // (If you had finite work, you would join here.)
     for (int i = 0; i < producer_count; i++)
     {
         int result = uthread_join(producer_threads[i], nullptr);
@@ -201,8 +197,6 @@ int main(int argc, char *argv[])
             cerr << "Error: uthread_join producer" << endl;
         }
     }
-
-    // Wait for all consumers to complete
     for (int i = 0; i < consumer_count; i++)
     {
         int result = uthread_join(consumer_threads[i], nullptr);

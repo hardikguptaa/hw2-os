@@ -13,19 +13,13 @@ void Lock::lock()
 { 
     disableInterrupts();
     if(held) {
-        // TCB* current = running; //need to find the current thread
-        // entrance_queue.push(current);  //might need to set the state of the threads
-        // switchThreads();    
-        
-        // If lock is already held, block the current (running) thread
+        // Lock is held, block the current running thread and add it to entrance queue
         running->setState(BLOCK);
         entrance_queue.push(running);
         switchThreads();
-        // When we return here, this thread has been woken,
-        // so now we can safely set 'held = true'.
-        // held = true;
     }
     else {
+        // Lock is available, acquire it
         held = true;
     }
     enableInterrupts();
@@ -35,9 +29,8 @@ void Lock::lock()
 // lock and hand off the lock
 void Lock::unlock()
 {
-    // TODO
     disableInterrupts();
-    _unlock(); // Confirm this once
+    _unlock();
     enableInterrupts();
 }
 
@@ -47,12 +40,14 @@ void Lock::unlock()
 void Lock::_unlock()
 {   
     if(!signaled_queue.empty()) {
+        // If there are threads in the signaled queue, wake one up
         TCB* next = signaled_queue.front();
         signaled_queue.pop();
         next->setState(READY);
         addToReady(next);
     }
     else if(!entrance_queue.empty()) {
+        // If no signaled threads, check the entrance queue
         TCB* next = entrance_queue.front();
         entrance_queue.pop();
         next->setState(READY);
@@ -69,6 +64,5 @@ void Lock::_unlock()
 // been released (following Mesa semantics)
 void Lock::_signal(TCB *tcb)
 {
-    // TODO
     signaled_queue.push(tcb);
 }

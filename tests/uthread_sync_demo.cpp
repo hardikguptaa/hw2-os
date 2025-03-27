@@ -1,3 +1,12 @@
+/**
+ * Producer–Consumer Test using Lock and CondVar
+ *
+ * Purpose:
+ *   This test simulates a classic bounded-buffer (producer–consumer) problem.
+ *   Multiple producer threads generate items and insert them into a fixed-size buffer,
+ *   while multiple consumer threads remove items from the buffer.
+ */
+ 
 #include "../lib/uthread.h"
 #include "../lib/Lock.h"
 #include "../lib/CondVar.h"

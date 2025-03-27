@@ -1,14 +1,36 @@
+/*
+ * Purpose:
+ *   This program evaluates and compares the performance of two locking mechanisms—
+ *   a blocking Lock versus a busy-waiting SpinLock—in a user-level thread library.
+ *
+ *   It creates a specified number of threads, where each thread repeatedly enters a critical 
+ *   section to increment a shared counter and perform a configurable amount of dummy computation 
+ *   (using a square root calculation loop) while holding the lock.
+ *
+ *   The program accepts four command-line arguments:
+ *     1. Mode: "lock" to use the blocking Lock or "spin" to use the SpinLock.
+ *     2. Number of threads to create.
+ *     3. Number of iterations per thread (how many times each thread will enter the critical section).
+ *     4. Critical section work: the number of dummy loop iterations to simulate computational work 
+ *        while the lock is held.
+ *
+ *   It measures the total elapsed time for all threads to complete their work and prints:
+ *     - The final shared counter value (which should equal num_threads * iterations_per_thread).
+ *     - The elapsed time in seconds.
+ */
+
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
 #include "../lib/uthread.h"      // uthread.h is in lib/
 #include "../lib/Lock.h"         // Lock.h is in lib/
 #include "../lib/SpinLock.h"     // SpinLock.h is in lib/
+#include <cmath>
 
 using namespace std;
 using namespace std::chrono;
 
-#define UTHREAD_TIME_QUANTUM 10000
+#define UTHREAD_TIME_QUANTUM 100000
 
 // Global shared counter used in the test.
 static long long sharedCounter = 0;
@@ -24,9 +46,11 @@ bool useLock = true;       // true: use Lock; false: use SpinLock
 
 // Dummy function to simulate work inside the critical section.
 void perform_work(int workIterations) {
-    volatile int dummy = 0;
+    //volatile int dummy = 0;
+
+    volatile double dummy = 1.0;
     for (int i = 0; i < workIterations; i++) {
-        dummy += i;
+        dummy = sqrt(dummy * i + 1.0);
     }
 }
 
